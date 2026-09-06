@@ -23,6 +23,14 @@ export function CandidateBlock({ label, candidate }) {
         <Tag>{candidate.confidence?.level}</Tag>
         reaches goal state: {candidate.confidence?.reachesGoalState} — {candidate.confidence?.reasoning}
       </Descriptions.Item>
+      {candidate.clientScope && (
+        <Descriptions.Item label="Client scope">
+          <Tag color={candidate.clientScope === 'all_clients' ? 'blue' : 'volcano'}>
+            {candidate.clientScope === 'all_clients' ? 'Applies to ALL clients' : 'This client only'}
+          </Tag>
+          {candidate.clientScope === 'this_client_only' && 'Requires a new per-client branch — none exists today.'}
+        </Descriptions.Item>
+      )}
     </Descriptions>
   )
 }
