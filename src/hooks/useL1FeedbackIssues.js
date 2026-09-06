@@ -34,7 +34,7 @@ export function useSubmitL1FeedbackIssueDecision() {
       }
     },
     onError: (error) => {
-      message.error(error.message || 'Failed to submit decision')
+      message.error(error.message || 'Failed to submit decision', 10)
     },
   })
 }

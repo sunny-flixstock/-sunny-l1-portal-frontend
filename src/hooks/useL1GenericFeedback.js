@@ -68,7 +68,7 @@ export function useSubmitL1GenericFeedback() {
       message.info('Feedback submitted — routing to the right framework file(s)')
     },
     onError: (error) => {
-      message.error(error.message || 'Failed to submit generic feedback')
+      message.error(error.message || 'Failed to submit generic feedback', 10)
     },
   })
 }
@@ -86,7 +86,7 @@ export function useSubmitL1GenericFeedbackZip() {
       message.info('Bundle submitted — routing to the right framework file(s)')
     },
     onError: (error) => {
-      message.error(error.message || 'Failed to submit bundle')
+      message.error(error.message || 'Failed to submit bundle', 10)
     },
   })
 }
@@ -110,7 +110,7 @@ export function useSubmitL1GenericFeedbackDecision() {
       message.success(decisionSuccessMessage(result?.data?.status))
     },
     onError: (error) => {
-      message.error(error.message || 'Failed to submit decision')
+      message.error(error.message || 'Failed to submit decision', 10)
     },
   })
 }

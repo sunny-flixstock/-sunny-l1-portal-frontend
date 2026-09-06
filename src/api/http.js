@@ -18,6 +18,12 @@ function getErrorMessage(data) {
   return 'Request failed'
 }
 
+// A slow/dropped connection uploading a large image payload (e.g. several
+// folder-picked photos, base64-inflated ~33%) must never leave the caller
+// hanging on a spinner forever with no feedback -- abort and surface a
+// clear, actionable error instead.
+const REQUEST_TIMEOUT_MS = 90000
+
 export async function apiRequest(path, options = {}) {
   const { headers, ...rest } = options
   const token = getSessionToken()
@@ -26,14 +32,31 @@ export async function apiRequest(path, options = {}) {
   // would break the request.
   const isFormData = typeof FormData !== 'undefined' && rest.body instanceof FormData
 
-  const response = await fetch(`${API_BASE}${path}`, {
-    ...rest,
-    headers: {
-      ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...headers,
-    },
-  })
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+
+  let response
+  try {
+    response = await fetch(`${API_BASE}${path}`, {
+      ...rest,
+      signal: controller.signal,
+      headers: {
+        ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...headers,
+      },
+    })
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      throw new Error(
+        `Request timed out after ${REQUEST_TIMEOUT_MS / 1000}s — the upload may be too large or the connection too slow. Try fewer/smaller images.`,
+        { cause: err }
+      )
+    }
+    throw new Error(`Network error — could not reach the server: ${err.message}`, { cause: err })
+  } finally {
+    clearTimeout(timeoutId)
+  }
 
   const data = await response.json().catch(() => ({}))
 

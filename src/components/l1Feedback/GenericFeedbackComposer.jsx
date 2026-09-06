@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { Button, Card, Divider, Input, Space, Tag, Typography, message } from 'antd'
+import { useSearchParams } from 'react-router-dom'
 import { CloseCircleFilled, FileZipOutlined, PictureOutlined, SendOutlined } from '@ant-design/icons'
 import { useSubmitL1GenericFeedback, useSubmitL1GenericFeedbackZip } from '../../hooks/useL1GenericFeedback.js'
 
@@ -52,6 +53,7 @@ function AttachmentGroup({ title, hint, color, items, onRemove }) {
 }
 
 export function GenericFeedbackComposer() {
+  const [searchParams, setSearchParams] = useSearchParams()
   const [text, setText] = useState('')
   const [badImages, setBadImages] = useState([]) // [{ id, file, previewUrl }]
   const [goodImages, setGoodImages] = useState([])
@@ -118,28 +120,55 @@ export function GenericFeedbackComposer() {
 
   const isPending = submit.isPending || submitZip.isPending
 
+  // Non-ZIP images go inline as base64 in one JSON body -- base64 inflates
+  // raw bytes ~33%, and a large combined selection (several full-res
+  // folder photos) can make that upload slow enough on a weak connection
+  // to look "stuck" with no other feedback. Warn before that happens
+  // rather than let it silently time out (see REQUEST_TIMEOUT_MS in
+  // api/http.js) with no explanation.
+  const RAW_SIZE_WARNING_BYTES = 15 * 1024 * 1024
+
   async function handleSubmit() {
     if (!text.trim()) {
       message.warning('Describe the framework requirement or issue first')
       return
     }
-    if (zipFile) {
-      await submitZip.mutateAsync({ text: text.trim(), bundleFile: zipFile })
-      setZipFile(null)
-    } else {
-      const files = [
-        ...badImages.map((a) => ({ file: a.file, label: 'bad' })),
-        ...goodImages.map((a) => ({ file: a.file, label: 'good' })),
-      ]
-      await submit.mutateAsync({ text: text.trim(), files })
-      ;[...badImages, ...goodImages].forEach((a) => URL.revokeObjectURL(a.previewUrl))
-      setBadImages([])
-      setGoodImages([])
+    try {
+      if (zipFile) {
+        await submitZip.mutateAsync({ text: text.trim(), bundleFile: zipFile })
+        setZipFile(null)
+      } else {
+        const allImages = [...badImages, ...goodImages]
+        const totalBytes = allImages.reduce((sum, a) => sum + (a.file.size || 0), 0)
+        if (totalBytes > RAW_SIZE_WARNING_BYTES) {
+          message.warning(
+            `That's ${(totalBytes / (1024 * 1024)).toFixed(1)}MB of images — this may take a while to upload. Consider fewer/smaller images if it seems stuck.`,
+            6
+          )
+        }
+        const files = [
+          ...badImages.map((a) => ({ file: a.file, label: 'bad' })),
+          ...goodImages.map((a) => ({ file: a.file, label: 'good' })),
+        ]
+        await submit.mutateAsync({ text: text.trim(), files })
+        allImages.forEach((a) => URL.revokeObjectURL(a.previewUrl))
+        setBadImages([])
+        setGoodImages([])
+      }
+    } catch {
+      // Already surfaced via the mutation's onError (message.error) --
+      // just stop here without navigating away, so the user's images/text
+      // are still on screen to retry.
+      return
     }
     setText('')
-    // The new request lands at the top of the list below -- scroll it into
-    // view so "it's processing" is immediately visible without the user
-    // having to know to look further down the page.
+    // Submitting here is submission-only -- the diagnosis progress and
+    // decision UI live under HITL Review, so jump straight there (and
+    // scroll to the new request at the top of it) instead of leaving the
+    // user on this tab wondering if anything happened.
+    const next = new URLSearchParams(searchParams)
+    next.set('tab', 'review')
+    setSearchParams(next)
     setTimeout(() => {
       document.getElementById('generic-feedback-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }, 250)

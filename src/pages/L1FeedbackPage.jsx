@@ -1,4 +1,4 @@
-import { Card, Segmented, Tabs, Typography } from 'antd'
+import { Card, Divider, Segmented, Tabs, Typography } from 'antd'
 import { useSearchParams } from 'react-router-dom'
 import { L1FeedbackUploadPanel } from '../components/l1Feedback/L1FeedbackUploadPanel.jsx'
 import { L1FeedbackIssuesList } from '../components/l1Feedback/L1FeedbackIssuesList.jsx'
@@ -12,8 +12,10 @@ const { Title } = Typography
 /** One entry point for every input shape: images (bad/good, bulk), a
  * generation-bundle ZIP, a free-text requirement, or a SKU config with
  * explicit per-variant feedback. All four submit into the same review
- * pipeline; this is purely which form is showing. URL-backed so refresh
- * keeps your place, same as the tab itself. */
+ * pipeline; this is purely which form is showing. Submission only -- the
+ * diagnosis progress and decision UI live under the HITL Review tab (see
+ * ReviewPanel below), not here, so this tab never doubles as a results
+ * feed. URL-backed so refresh keeps your place, same as the tab itself. */
 function SubmitFeedbackPanel({ searchParams, setSearchParams }) {
   const mode = searchParams.get('mode') || 'feedback'
 
@@ -34,16 +36,25 @@ function SubmitFeedbackPanel({ searchParams, setSearchParams }) {
           { label: 'SKU config upload', value: 'sku' },
         ]}
       />
-      {mode === 'sku' ? (
-        <L1FeedbackUploadPanel />
-      ) : (
-        <>
-          <GenericFeedbackComposer />
-          <div id="generic-feedback-list" style={{ marginTop: 16, scrollMarginTop: 16 }}>
-            <GenericFeedbackList />
-          </div>
-        </>
-      )}
+      {mode === 'sku' ? <L1FeedbackUploadPanel /> : <GenericFeedbackComposer />}
+    </>
+  )
+}
+
+/** Every diagnosis awaiting (or already given) a human decision, in one
+ * place, regardless of which submission path produced it -- Generic
+ * Feedback requests (with their own progress/candidate cards per target)
+ * above, SKU-batch RCA issues below. */
+function ReviewPanel() {
+  return (
+    <>
+      <div id="generic-feedback-list" style={{ scrollMarginTop: 16 }}>
+        <Title level={5}>Generic Feedback</Title>
+        <GenericFeedbackList />
+      </div>
+      <Divider />
+      <Title level={5}>SKU-Based Issues</Title>
+      <L1FeedbackIssuesList />
     </>
   )
 }
@@ -76,7 +87,7 @@ export function L1FeedbackPage() {
             label: 'Submit Feedback',
             children: <SubmitFeedbackPanel searchParams={searchParams} setSearchParams={setSearchParams} />,
           },
-          { key: 'review', label: 'HITL Review', children: <L1FeedbackIssuesList /> },
+          { key: 'review', label: 'HITL Review', children: <ReviewPanel /> },
           { key: 'versions', label: 'Ground Truth Versions', children: <L1GroundTruthTable /> },
           { key: 'history', label: 'Batch/Session History', children: <BatchSessionHistory /> },
         ]}
