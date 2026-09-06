@@ -1,10 +1,42 @@
-import { useState } from 'react'
-import { Alert, Button, Card, Empty, Image, Input, Popconfirm, Space, Spin, Tag, Typography } from 'antd'
+import { useEffect, useState } from 'react'
+import { Alert, Button, Card, Empty, Image, Input, Popconfirm, Progress, Space, Tag, Typography } from 'antd'
 import { CheckOutlined, CloseOutlined, EditOutlined } from '@ant-design/icons'
 import { useL1GenericFeedbackList, useSubmitL1GenericFeedbackDecision } from '../../hooks/useL1GenericFeedback.js'
 import { CandidateBlock } from './CandidateBlock.jsx'
 
 const { Text, Paragraph } = Typography
+
+// Diagnosis is one opaque LLM call on the backend -- there's no real
+// step-by-step progress to report. This simulates one instead (common
+// pattern for a single long-running async call): creeps toward 92% over
+// ~20s so it never falsely claims "done" while still processing is polling
+// every 3s (see useL1GenericFeedback.js) and will flip this to the real
+// "diagnosed"/"failed" card the moment the backend actually finishes.
+const SIMULATED_DURATION_MS = 20000
+const SIMULATED_CAP_PERCENT = 92
+
+function useElapsedMs(since) {
+  const [elapsed, setElapsed] = useState(() => Date.now() - since)
+  useEffect(() => {
+    const id = setInterval(() => setElapsed(Date.now() - since), 400)
+    return () => clearInterval(id)
+  }, [since])
+  return elapsed
+}
+
+function ProcessingProgress({ createdAt }) {
+  const elapsedMs = useElapsedMs(new Date(createdAt).getTime())
+  const percent = Math.min(SIMULATED_CAP_PERCENT, Math.round((elapsedMs / SIMULATED_DURATION_MS) * 100))
+  const elapsedSeconds = Math.floor(elapsedMs / 1000)
+  return (
+    <Space direction="vertical" style={{ width: '100%' }} size={4}>
+      <Progress percent={percent} status="active" showInfo />
+      <Text type="secondary" style={{ fontSize: 12 }}>
+        Diagnosing against the current framework — {elapsedSeconds}s elapsed
+      </Text>
+    </Space>
+  )
+}
 
 function TargetCard({ requestId, target, targetIndex }) {
   const submitDecision = useSubmitL1GenericFeedbackDecision()
@@ -152,12 +184,7 @@ export function RequestCard({ request }) {
         </Paragraph>
       )}
 
-      {request.status === 'processing' && (
-        <Space align="center">
-          <Spin size="small" />
-          <Text type="secondary">Analyzing feedback against the current framework…</Text>
-        </Space>
-      )}
+      {request.status === 'processing' && <ProcessingProgress createdAt={request.createdAt} />}
 
       {request.status === 'failed' && (
         <Alert

@@ -39,7 +39,7 @@ function SubmitFeedbackPanel({ searchParams, setSearchParams }) {
       ) : (
         <>
           <GenericFeedbackComposer />
-          <div style={{ marginTop: 16 }}>
+          <div id="generic-feedback-list" style={{ marginTop: 16, scrollMarginTop: 16 }}>
             <GenericFeedbackList />
           </div>
         </>

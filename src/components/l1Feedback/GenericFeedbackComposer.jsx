@@ -137,6 +137,12 @@ export function GenericFeedbackComposer() {
       setGoodImages([])
     }
     setText('')
+    // The new request lands at the top of the list below -- scroll it into
+    // view so "it's processing" is immediately visible without the user
+    // having to know to look further down the page.
+    setTimeout(() => {
+      document.getElementById('generic-feedback-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 250)
   }
 
   return (
