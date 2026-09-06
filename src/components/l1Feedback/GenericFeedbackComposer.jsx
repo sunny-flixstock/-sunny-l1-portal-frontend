@@ -60,18 +60,29 @@ export function GenericFeedbackComposer() {
   const submitZip = useSubmitL1GenericFeedbackZip()
   const badInputRef = useRef(null)
   const goodInputRef = useRef(null)
+  const badFolderInputRef = useRef(null)
+  const goodFolderInputRef = useRef(null)
   const zipInputRef = useRef(null)
 
   const hasImages = badImages.length > 0 || goodImages.length > 0
 
-  function addFiles(fileList, setGroup) {
+  // Every image in a group goes into the same vision-model call, so a
+  // very large folder would be slow/expensive -- warn (not block) past a
+  // sane bulk-example size, since a handful-to-a-dozen is exactly the
+  // intended use.
+  const SOFT_IMAGE_CAP = 15
+
+  function addFiles(fileList, setGroup, groupLabel) {
     const files = Array.from(fileList).filter((f) => f.type.startsWith('image/'))
     if (!files.length) return
     setZipFile(null)
-    setGroup((prev) => [
-      ...prev,
-      ...files.map((file) => ({ id: nextLocalId++, file, previewUrl: URL.createObjectURL(file) })),
-    ])
+    setGroup((prev) => {
+      const next = [...prev, ...files.map((file) => ({ id: nextLocalId++, file, previewUrl: URL.createObjectURL(file) }))]
+      if (prev.length <= SOFT_IMAGE_CAP && next.length > SOFT_IMAGE_CAP) {
+        message.warning(`${next.length} ${groupLabel} images attached — that's a lot for one diagnosis call; consider trimming to the clearest examples.`)
+      }
+      return next
+    })
   }
 
   function removeFrom(setGroup, id) {
@@ -101,7 +112,7 @@ export function GenericFeedbackComposer() {
       // Pasting is the "I just saw a bad render, grab it" workflow --
       // defaults to the Bad examples group. Good examples are always
       // explicit (click "Add good example(s)").
-      addFiles(imageFiles, setBadImages)
+      addFiles(imageFiles, setBadImages, 'bad')
     }
   }
 
@@ -174,26 +185,31 @@ export function GenericFeedbackComposer() {
           autoSize={{ minRows: 3, maxRows: 8 }}
         />
 
-        <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
-          <Space wrap>
-            <Button
-              icon={<PictureOutlined style={{ color: '#ff4d4f' }} />}
-              disabled={Boolean(zipFile)}
-              onClick={() => badInputRef.current?.click()}
-            >
-              Add bad example(s)
-            </Button>
-            <Button
-              icon={<PictureOutlined style={{ color: '#52c41a' }} />}
-              disabled={Boolean(zipFile)}
-              onClick={() => goodInputRef.current?.click()}
-            >
-              Add good example(s)
-            </Button>
-            <Divider type="vertical" />
-            <Button icon={<FileZipOutlined />} disabled={hasImages} onClick={() => zipInputRef.current?.click()}>
-              Attach ZIP bundle
-            </Button>
+        <Space wrap align="start" style={{ width: '100%', justifyContent: 'space-between' }}>
+          <Space direction="vertical" size={4}>
+            <Space wrap align="center">
+              <Button
+                icon={<PictureOutlined style={{ color: '#ff4d4f' }} />}
+                disabled={Boolean(zipFile)}
+                onClick={() => badInputRef.current?.click()}
+              >
+                Add bad example(s)
+              </Button>
+              <a onClick={(e) => { e.preventDefault(); badFolderInputRef.current?.click() }}>or choose a folder</a>
+              <Divider type="vertical" />
+              <Button
+                icon={<PictureOutlined style={{ color: '#52c41a' }} />}
+                disabled={Boolean(zipFile)}
+                onClick={() => goodInputRef.current?.click()}
+              >
+                Add good example(s)
+              </Button>
+              <a onClick={(e) => { e.preventDefault(); goodFolderInputRef.current?.click() }}>or choose a folder</a>
+              <Divider type="vertical" />
+              <Button icon={<FileZipOutlined />} disabled={hasImages} onClick={() => zipInputRef.current?.click()}>
+                Attach ZIP bundle
+              </Button>
+            </Space>
           </Space>
           <input
             ref={badInputRef}
@@ -202,7 +218,19 @@ export function GenericFeedbackComposer() {
             multiple
             style={{ display: 'none' }}
             onChange={(e) => {
-              addFiles(e.target.files, setBadImages)
+              addFiles(e.target.files, setBadImages, 'bad')
+              e.target.value = ''
+            }}
+          />
+          <input
+            ref={badFolderInputRef}
+            type="file"
+            webkitdirectory=""
+            directory=""
+            multiple
+            style={{ display: 'none' }}
+            onChange={(e) => {
+              addFiles(e.target.files, setBadImages, 'bad')
               e.target.value = ''
             }}
           />
@@ -213,7 +241,19 @@ export function GenericFeedbackComposer() {
             multiple
             style={{ display: 'none' }}
             onChange={(e) => {
-              addFiles(e.target.files, setGoodImages)
+              addFiles(e.target.files, setGoodImages, 'good')
+              e.target.value = ''
+            }}
+          />
+          <input
+            ref={goodFolderInputRef}
+            type="file"
+            webkitdirectory=""
+            directory=""
+            multiple
+            style={{ display: 'none' }}
+            onChange={(e) => {
+              addFiles(e.target.files, setGoodImages, 'good')
               e.target.value = ''
             }}
           />
