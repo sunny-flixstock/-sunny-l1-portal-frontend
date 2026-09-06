@@ -1,8 +1,8 @@
 import { apiRequest } from './http.js'
 
-export function loginWithGoogle(credential) {
-  return apiRequest('/auth/google', {
+export function loginWithPassword(password) {
+  return apiRequest('/auth/login', {
     method: 'POST',
-    body: JSON.stringify({ credential }),
+    body: JSON.stringify({ password }),
   })
 }
