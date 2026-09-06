@@ -33,6 +33,20 @@ function TargetCard({ requestId, target, targetIndex }) {
       }
       style={{ marginBottom: 12 }}
     >
+      {target.isPreambleSuggestion && (
+        <Alert
+          type="warning"
+          showIcon
+          style={{ marginBottom: 12 }}
+          message={
+            <Space>
+              <Tag color="purple">Preamble suggestion</Tag>
+              <Text>Code-level issue — approving records a suggestion for engineering, no framework document changes</Text>
+            </Space>
+          }
+        />
+      )}
+
       <Space direction="vertical" size="middle" style={{ width: '100%' }}>
         <CandidateBlock label="Candidate 0" candidate={target.candidates.candidate_0} />
         <CandidateBlock label="Candidate 1" candidate={target.candidates.candidate_1} />
@@ -107,10 +121,17 @@ export function RequestCard({ request }) {
 
       {request.images?.length > 0 && (
         <Space wrap style={{ marginBottom: 12 }}>
-          {request.images.map((img) => (
-            <Image key={img.key} src={img.url} alt="attachment" width={100} style={{ borderRadius: 6 }} />
+          {request.images.map((img, index) => (
+            <Image key={index} src={img.url} alt="attachment" width={100} style={{ borderRadius: 6 }} />
           ))}
         </Space>
+      )}
+
+      {request.realPrompt && (
+        <Paragraph type="secondary" style={{ marginBottom: 12 }}>
+          <Text strong>Real prompt (from bundle): </Text>
+          <Text style={{ fontFamily: 'monospace', fontSize: 12 }}>{request.realPrompt}</Text>
+        </Paragraph>
       )}
 
       {request.status === 'processing' && (

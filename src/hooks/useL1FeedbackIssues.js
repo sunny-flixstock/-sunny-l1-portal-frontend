@@ -25,6 +25,10 @@ export function useSubmitL1FeedbackIssueDecision() {
       const status = result?.data?.status
       if (status === 'needsManualHandling') {
         message.warning('Recorded, but this issue needs manual handling (not a ground-truth doc)')
+      } else if (status === 'preambleSuggestionRecorded') {
+        message.info(
+          'Preamble suggestion recorded — no framework document was changed; this is for engineering follow-up in the rendering pipeline'
+        )
       } else {
         message.success('Decision recorded')
       }

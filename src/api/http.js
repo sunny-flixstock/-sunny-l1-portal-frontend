@@ -21,11 +21,15 @@ function getErrorMessage(data) {
 export async function apiRequest(path, options = {}) {
   const { headers, ...rest } = options
   const token = getSessionToken()
+  // FormData bodies (e.g. a ZIP upload) need the browser to set its own
+  // multipart boundary in Content-Type -- forcing application/json here
+  // would break the request.
+  const isFormData = typeof FormData !== 'undefined' && rest.body instanceof FormData
 
   const response = await fetch(`${API_BASE}${path}`, {
     ...rest,
     headers: {
-      'Content-Type': 'application/json',
+      ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...headers,
     },

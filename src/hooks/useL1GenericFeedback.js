@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { message } from 'antd'
 import {
   submitL1GenericFeedback,
+  submitL1GenericFeedbackZip,
   fetchL1GenericFeedbackList,
   fetchL1GenericFeedback,
   submitL1GenericFeedbackDecision,
@@ -68,6 +69,32 @@ export function useSubmitL1GenericFeedback() {
   })
 }
 
+/** Submits a generation-bundle ZIP (e.g. a vertex_*.zip: metadata.json with
+ * the real composed prompt + outputs/*.jpg) instead of a bare pasted
+ * image -- richer diagnosis since the real prompt can be compared against
+ * ground truth directly. */
+export function useSubmitL1GenericFeedbackZip() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ text, bundleFile, createdBy }) => submitL1GenericFeedbackZip({ text, bundleFile, createdBy }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: l1GenericFeedbackKeys.all })
+      message.info('Bundle submitted — routing to the right framework file(s)')
+    },
+    onError: (error) => {
+      message.error(error.message || 'Failed to submit bundle')
+    },
+  })
+}
+
+function decisionSuccessMessage(status) {
+  if (status === 'rejected') return 'Target rejected'
+  if (status === 'preambleSuggestionRecorded') {
+    return 'Preamble suggestion recorded — no framework document was changed; this is for engineering follow-up in the rendering pipeline'
+  }
+  return 'Decision recorded, Staging updated'
+}
+
 export function useSubmitL1GenericFeedbackDecision() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -76,8 +103,7 @@ export function useSubmitL1GenericFeedbackDecision() {
       queryClient.invalidateQueries({ queryKey: l1GenericFeedbackKeys.all })
       queryClient.invalidateQueries({ queryKey: l1GenericFeedbackKeys.detail(variables.id) })
       queryClient.invalidateQueries({ queryKey: ['l1GroundTruth'] })
-      const status = result?.data?.status
-      message.success(status === 'rejected' ? 'Target rejected' : 'Decision recorded, Staging updated')
+      message.success(decisionSuccessMessage(result?.data?.status))
     },
     onError: (error) => {
       message.error(error.message || 'Failed to submit decision')

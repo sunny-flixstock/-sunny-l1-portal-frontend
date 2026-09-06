@@ -7,6 +7,17 @@ export function submitL1GenericFeedback(body) {
   })
 }
 
+export function submitL1GenericFeedbackZip({ text, bundleFile, createdBy }) {
+  const formData = new FormData()
+  formData.append('text', text)
+  formData.append('bundle', bundleFile)
+  if (createdBy) formData.append('createdBy', createdBy)
+  return apiRequest('/l1-feedback/generic/zip', {
+    method: 'POST',
+    body: formData,
+  })
+}
+
 export function fetchL1GenericFeedbackList() {
   return apiRequest('/l1-feedback/generic')
 }

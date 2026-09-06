@@ -1,15 +1,18 @@
 import { useState } from 'react'
-import { Button, Card, Empty, Flex, Image, Input, Popconfirm, Space, Tag, Typography } from 'antd'
+import { Alert, Button, Card, Empty, Flex, Image, Input, Popconfirm, Space, Tag, Typography } from 'antd'
 import { CheckOutlined, CloseOutlined, EditOutlined } from '@ant-design/icons'
 import { useL1FeedbackIssues, useSubmitL1FeedbackIssueDecision } from '../../hooks/useL1FeedbackIssues.js'
 import { CandidateBlock } from './CandidateBlock.jsx'
 
 const { Text, Paragraph } = Typography
 
+const isPreambleConcern = (concernedFile) => String(concernedFile ?? '').startsWith('preamble:')
+
 function IssueCard({ issue }) {
   const submitDecision = useSubmitL1FeedbackIssueDecision()
   const [customText, setCustomText] = useState('')
   const [showCustom, setShowCustom] = useState(false)
+  const preamble = isPreambleConcern(issue.concernedFile)
 
   function decide(decision, extra = {}) {
     submitDecision.mutate({
@@ -67,6 +70,20 @@ function IssueCard({ issue }) {
         <Text strong>Concerned file: </Text>
         {issue.concernedFile} <Text type="secondary">({issue.concernedLocation})</Text>
       </Paragraph>
+
+      {preamble && (
+        <Alert
+          type="warning"
+          showIcon
+          style={{ marginBottom: 12 }}
+          message={
+            <Space>
+              <Tag color="purple">Preamble suggestion</Tag>
+              <Text>Code-level issue — approving records a suggestion for engineering, no framework document changes</Text>
+            </Space>
+          }
+        />
+      )}
 
       <Space direction="vertical" size="middle" style={{ width: '100%' }}>
         <CandidateBlock label="Candidate 0" candidate={issue.candidates.candidate_0} />
