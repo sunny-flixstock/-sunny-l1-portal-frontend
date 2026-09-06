@@ -1,9 +1,5 @@
 import { apiRequest } from './http.js'
 
-export function getL1GenericFeedbackUploadUrl(fileName) {
-  return apiRequest(`/l1-feedback/generic/getUploadUrl?fileName=${encodeURIComponent(fileName)}`)
-}
-
 export function submitL1GenericFeedback(body) {
   return apiRequest('/l1-feedback/generic', {
     method: 'POST',

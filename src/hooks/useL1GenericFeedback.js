@@ -1,13 +1,22 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { message } from 'antd'
 import {
-  getL1GenericFeedbackUploadUrl,
   submitL1GenericFeedback,
   fetchL1GenericFeedbackList,
   fetchL1GenericFeedback,
   submitL1GenericFeedbackDecision,
 } from '../api/l1GenericFeedbackApi.js'
-import { uploadFileToPresignedUrl } from '../utils/s3Upload.js'
+
+/** Reads a File as a bare base64 string (no data: URI prefix) for inline
+ * submission in the request body -- no separate upload step/service. */
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result).split(',')[1])
+    reader.onerror = () => reject(reader.error)
+    reader.readAsDataURL(file)
+  })
+}
 
 export const l1GenericFeedbackKeys = {
   all: ['l1GenericFeedback'],
@@ -35,18 +44,18 @@ export function useL1GenericFeedback(id, options = {}) {
   })
 }
 
-/** Uploads each attached image file to S3 via the pre-signed flow, then
- * submits the text + resulting { key, mimeType } pairs. */
+/** Reads each attached/pasted image as base64 and submits it inline
+ * alongside the text -- no upload step, no external storage. */
 export function useSubmitL1GenericFeedback() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async ({ text, files, createdBy }) => {
-      const images = []
-      for (const file of files || []) {
-        const { data } = await getL1GenericFeedbackUploadUrl(file.name)
-        await uploadFileToPresignedUrl({ url: data.url, file, contentType: data.contentType || file.type })
-        images.push({ key: data.key, mimeType: data.contentType || file.type })
-      }
+      const images = await Promise.all(
+        (files || []).map(async (file) => ({
+          data: await fileToBase64(file),
+          mimeType: file.type,
+        }))
+      )
       return submitL1GenericFeedback({ text, images, createdBy })
     },
     onSuccess: () => {
