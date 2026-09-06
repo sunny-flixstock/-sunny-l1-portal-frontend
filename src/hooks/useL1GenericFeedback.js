@@ -46,15 +46,19 @@ export function useL1GenericFeedback(id, options = {}) {
 }
 
 /** Reads each attached/pasted image as base64 and submits it inline
- * alongside the text -- no upload step, no external storage. */
+ * alongside the text -- no upload step, no external storage. `files` is
+ * [{ file, label }] -- label is 'bad' | 'good' | undefined, marking which
+ * side of a before/after comparison this image is (or an ordinary
+ * unlabeled single-render attachment). */
 export function useSubmitL1GenericFeedback() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async ({ text, files, createdBy }) => {
       const images = await Promise.all(
-        (files || []).map(async (file) => ({
+        (files || []).map(async ({ file, label }) => ({
           data: await fileToBase64(file),
           mimeType: file.type,
+          ...(label ? { label } : {}),
         }))
       )
       return submitL1GenericFeedback({ text, images, createdBy })

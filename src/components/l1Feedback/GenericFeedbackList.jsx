@@ -122,7 +122,25 @@ export function RequestCard({ request }) {
       {request.images?.length > 0 && (
         <Space wrap style={{ marginBottom: 12 }}>
           {request.images.map((img, index) => (
-            <Image key={index} src={img.url} alt="attachment" width={100} style={{ borderRadius: 6 }} />
+            <div key={index} style={{ position: 'relative' }}>
+              <Image
+                src={img.url}
+                alt="attachment"
+                width={100}
+                style={{
+                  borderRadius: 6,
+                  border: img.label ? `2px solid ${img.label === 'bad' ? '#ff4d4f' : '#52c41a'}` : undefined,
+                }}
+              />
+              {img.label && (
+                <Tag
+                  color={img.label === 'bad' ? 'red' : 'green'}
+                  style={{ position: 'absolute', top: 2, left: 2, fontSize: 10, lineHeight: '14px', padding: '0 4px' }}
+                >
+                  {img.label}
+                </Tag>
+              )}
+            </div>
           ))}
         </Space>
       )}

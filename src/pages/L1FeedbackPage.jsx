@@ -1,4 +1,4 @@
-import { Card, Tabs, Typography } from 'antd'
+import { Card, Segmented, Tabs, Typography } from 'antd'
 import { useSearchParams } from 'react-router-dom'
 import { L1FeedbackUploadPanel } from '../components/l1Feedback/L1FeedbackUploadPanel.jsx'
 import { L1FeedbackIssuesList } from '../components/l1Feedback/L1FeedbackIssuesList.jsx'
@@ -9,9 +9,48 @@ import { BatchSessionHistory } from '../components/l1Feedback/BatchSessionHistor
 
 const { Title } = Typography
 
+/** One entry point for every input shape: images (bad/good, bulk), a
+ * generation-bundle ZIP, a free-text requirement, or a SKU config with
+ * explicit per-variant feedback. All four submit into the same review
+ * pipeline; this is purely which form is showing. URL-backed so refresh
+ * keeps your place, same as the tab itself. */
+function SubmitFeedbackPanel({ searchParams, setSearchParams }) {
+  const mode = searchParams.get('mode') || 'feedback'
+
+  function handleModeChange(value) {
+    const next = new URLSearchParams(searchParams)
+    next.set('mode', value)
+    setSearchParams(next)
+  }
+
+  return (
+    <>
+      <Segmented
+        value={mode}
+        onChange={handleModeChange}
+        style={{ marginBottom: 16 }}
+        options={[
+          { label: 'Feedback (image / ZIP / text)', value: 'feedback' },
+          { label: 'SKU config upload', value: 'sku' },
+        ]}
+      />
+      {mode === 'sku' ? (
+        <L1FeedbackUploadPanel />
+      ) : (
+        <>
+          <GenericFeedbackComposer />
+          <div style={{ marginTop: 16 }}>
+            <GenericFeedbackList />
+          </div>
+        </>
+      )}
+    </>
+  )
+}
+
 export function L1FeedbackPage() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const activeTab = searchParams.get('tab') || 'upload'
+  const activeTab = searchParams.get('tab') || 'submit'
 
   function handleTabChange(key) {
     const next = new URLSearchParams(searchParams)
@@ -32,20 +71,12 @@ export function L1FeedbackPage() {
         activeKey={activeTab}
         onChange={handleTabChange}
         items={[
-          { key: 'upload', label: 'Upload', children: <L1FeedbackUploadPanel /> },
-          { key: 'review', label: 'HITL Review', children: <L1FeedbackIssuesList /> },
           {
-            key: 'generic',
-            label: 'Generic Feedback',
-            children: (
-              <>
-                <GenericFeedbackComposer />
-                <div style={{ marginTop: 16 }}>
-                  <GenericFeedbackList />
-                </div>
-              </>
-            ),
+            key: 'submit',
+            label: 'Submit Feedback',
+            children: <SubmitFeedbackPanel searchParams={searchParams} setSearchParams={setSearchParams} />,
           },
+          { key: 'review', label: 'HITL Review', children: <L1FeedbackIssuesList /> },
           { key: 'versions', label: 'Ground Truth Versions', children: <L1GroundTruthTable /> },
           { key: 'history', label: 'Batch/Session History', children: <BatchSessionHistory /> },
         ]}
