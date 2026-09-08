@@ -62,6 +62,13 @@ async function filesToConfigs(fileList, feedbackByFile) {
   return configs
 }
 
+const PHASE_LABELS = {
+  ingesting: 'Ingesting uploaded configs',
+  diagnosing_skus: 'Diagnosing SKUs one by one',
+  batch_rca: 'Clustering issues across the batch (batch-level RCA)',
+  reconciling: 'Merging batch-level and SKU-level results',
+}
+
 function BatchProgress({ batch }) {
   const done = (batch.diagnosedSkuIds?.length ?? 0) + (batch.rejectedSkuIds?.length ?? 0)
   const total = batch.totalSkus || 1
@@ -74,6 +81,18 @@ function BatchProgress({ batch }) {
         <Spin size="small" />
         <Text strong>Processing batch {batch._id}…</Text>
       </Space>
+      {batch.currentPhase && (
+        <Paragraph type="secondary" style={{ marginBottom: 8 }}>
+          {PHASE_LABELS[batch.currentPhase] ?? batch.currentPhase}
+          {batch.currentPhase === 'diagnosing_skus' && batch.currentlyProcessingSkuId && (
+            <>
+              {' '}
+              — sending SKU <Text code>{batch.currentlyProcessingSkuId}</Text> to the LLM (
+              {(batch.diagnosedSkuIds?.length ?? 0) + 1} of {batch.skuIds?.length ?? total})
+            </>
+          )}
+        </Paragraph>
+      )}
       <Progress percent={percent} status="active" />
       <Space wrap>
         <Tag color="green">{batch.diagnosedSkuIds?.length ?? 0} diagnosed</Tag>

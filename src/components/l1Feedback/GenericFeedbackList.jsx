@@ -65,6 +65,28 @@ function TargetCard({ requestId, target, targetIndex }) {
       }
       style={{ marginBottom: 12 }}
     >
+      {target.clusterSummary && (
+        <Alert
+          type="info"
+          showIcon
+          style={{ marginBottom: 12 }}
+          message={
+            <Space direction="vertical" size={2}>
+              <Text>{target.clusterSummary}</Text>
+              {target.affectedSkuIds?.length > 0 && (
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  Affects {target.affectedSkuIds.length} SKU(s)
+                  {target.mergedFromSkuIssues?.length
+                    ? ` — approving will also close ${target.mergedFromSkuIssues.length} matching SKU-level issue(s)`
+                    : ''}
+                  : {target.affectedSkuIds.join(', ')}
+                </Text>
+              )}
+            </Space>
+          }
+        />
+      )}
+
       {target.isPreambleSuggestion && (
         <Alert
           type="warning"
@@ -139,6 +161,7 @@ export function RequestCard({ request }) {
           <Tag color={request.status === 'failed' ? 'red' : request.status === 'processing' ? 'gold' : 'green'}>
             {request.status}
           </Tag>
+          {request.kind === 'batch_level' && <Tag color="geekblue">Batch-level RCA</Tag>}
           <Text type="secondary" style={{ fontWeight: 400 }}>
             {new Date(request.createdAt).toLocaleString()}
           </Text>
