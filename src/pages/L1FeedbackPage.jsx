@@ -1,6 +1,7 @@
 import { Card, Divider, Segmented, Tabs, Typography } from 'antd'
 import { useSearchParams } from 'react-router-dom'
 import { L1FeedbackUploadPanel } from '../components/l1Feedback/L1FeedbackUploadPanel.jsx'
+import { PayloadCreationPanel } from '../components/l1Feedback/PayloadCreationPanel.jsx'
 import { L1FeedbackIssuesList } from '../components/l1Feedback/L1FeedbackIssuesList.jsx'
 import { L1GroundTruthTable } from '../components/l1Feedback/L1GroundTruthTable.jsx'
 import { GenericFeedbackComposer } from '../components/l1Feedback/GenericFeedbackComposer.jsx'
@@ -25,6 +26,16 @@ function SubmitFeedbackPanel({ searchParams, setSearchParams }) {
     setSearchParams(next)
   }
 
+  // Payload Creation hands off to SKU config upload by switching mode and
+  // naming the session to import — L1FeedbackUploadPanel does the actual
+  // one-shot import (see its fromPayloadSession effect).
+  function handleSendToSkuUpload(payloadSessionId) {
+    const next = new URLSearchParams(searchParams)
+    next.set('mode', 'sku')
+    next.set('fromPayloadSession', payloadSessionId)
+    setSearchParams(next)
+  }
+
   return (
     <>
       <Segmented
@@ -34,9 +45,12 @@ function SubmitFeedbackPanel({ searchParams, setSearchParams }) {
         options={[
           { label: 'Feedback (image / ZIP / text)', value: 'feedback' },
           { label: 'SKU config upload', value: 'sku' },
+          { label: 'Payload creation', value: 'payload' },
         ]}
       />
-      {mode === 'sku' ? <L1FeedbackUploadPanel /> : <GenericFeedbackComposer />}
+      {mode === 'sku' && <L1FeedbackUploadPanel />}
+      {mode === 'payload' && <PayloadCreationPanel onSendToSkuUpload={handleSendToSkuUpload} />}
+      {mode === 'feedback' && <GenericFeedbackComposer />}
     </>
   )
 }

@@ -20,6 +20,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
 import { useCreateL1FeedbackBatch, useL1FeedbackBatch } from '../../hooks/useL1FeedbackBatches.js'
 import { l1FeedbackIssueKeys } from '../../hooks/useL1FeedbackIssues.js'
+import { fetchL1PayloadSessionFilesWithContent } from '../../api/l1PayloadSessionApi.js'
 
 const { Text, Paragraph } = Typography
 const { Dragger } = Upload
@@ -169,6 +170,32 @@ export function L1FeedbackUploadPanel() {
   const queryClient = useQueryClient()
   const dirInputRef = useRef(null)
   const notifiedRef = useRef(new Set())
+  const importingPayloadSessionId = searchParams.get('fromPayloadSession')
+
+  // One-shot handoff from the Payload Creation tab: fromPayloadSession names
+  // a session whose already feedback-merged files should load here exactly
+  // as if freshly dropped, so you can still inspect/tweak before clicking
+  // Process -- never auto-submitted. Cleared immediately after loading so a
+  // later refresh of this tab doesn't keep re-importing it. The param's own
+  // presence (rather than a separate state flag) is what drives the loading
+  // indicator below, so nothing sets state synchronously inside the effect.
+  useEffect(() => {
+    if (!importingPayloadSessionId) return
+    fetchL1PayloadSessionFilesWithContent(importingPayloadSessionId)
+      .then(({ data: files }) => {
+        const asFiles = files.map((f) => new File([f.content], `${f.skuId}.json`, { type: 'application/json' }))
+        setPendingFiles(asFiles)
+        setFeedbackByFile({})
+        message.success(`Loaded ${asFiles.length} file(s) from the payload session`)
+      })
+      .catch((err) => message.error(err.message || 'Failed to load payload session files'))
+      .finally(() => {
+        const next = new URLSearchParams(searchParams)
+        next.delete('fromPayloadSession')
+        setSearchParams(next)
+      })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [importingPayloadSessionId])
 
   // Fire a completion notification exactly once per batch, the moment it
   // leaves 'processing' -- works even if the person has switched tabs
@@ -215,6 +242,9 @@ export function L1FeedbackUploadPanel() {
 
   return (
     <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+      {importingPayloadSessionId && (
+        <Alert type="info" showIcon icon={<Spin size="small" />} message="Loading files from the payload session…" />
+      )}
       <Card size="small">
         <Dragger
           multiple
