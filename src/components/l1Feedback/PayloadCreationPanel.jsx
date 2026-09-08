@@ -13,7 +13,14 @@ import {
   Upload,
   message,
 } from 'antd'
-import { CheckCircleOutlined, DownloadOutlined, ExportOutlined, FileZipOutlined, InboxOutlined } from '@ant-design/icons'
+import {
+  CheckCircleOutlined,
+  DownloadOutlined,
+  EyeOutlined,
+  ExportOutlined,
+  FileZipOutlined,
+  InboxOutlined,
+} from '@ant-design/icons'
 import { useSearchParams } from 'react-router-dom'
 import {
   useCreateL1PayloadSession,
@@ -32,7 +39,7 @@ const { Dragger } = Upload
  * the portal instead of only a local agent run. Never auto-submits
  * anywhere: the result is a review table you inspect, then either
  * download or hand off to "SKU config upload" yourself. */
-export function PayloadCreationPanel({ onSendToSkuUpload }) {
+export function PayloadCreationPanel({ onSendToSkuUpload, onVerifyFeedback }) {
   const [searchParams, setSearchParams] = useSearchParams()
   const sessionId = searchParams.get('payloadSessionId')
   const setSessionId = (id) => {
@@ -184,6 +191,9 @@ export function PayloadCreationPanel({ onSendToSkuUpload }) {
             <Space>
               <Button size="small" icon={<DownloadOutlined />} loading={downloadZip.isPending} onClick={() => downloadZip.mutate(sessionId)}>
                 Download ZIP
+              </Button>
+              <Button size="small" icon={<EyeOutlined />} onClick={() => onVerifyFeedback?.(sessionId)}>
+                Verify Feedback
               </Button>
               <Button
                 size="small"

@@ -2,6 +2,7 @@ import { Card, Divider, Segmented, Tabs, Typography } from 'antd'
 import { useSearchParams } from 'react-router-dom'
 import { L1FeedbackUploadPanel } from '../components/l1Feedback/L1FeedbackUploadPanel.jsx'
 import { PayloadCreationPanel } from '../components/l1Feedback/PayloadCreationPanel.jsx'
+import { FeedbackVerificationPanel } from '../components/l1Feedback/FeedbackVerificationPanel.jsx'
 import { L1FeedbackIssuesList } from '../components/l1Feedback/L1FeedbackIssuesList.jsx'
 import { L1GroundTruthTable } from '../components/l1Feedback/L1GroundTruthTable.jsx'
 import { GenericFeedbackComposer } from '../components/l1Feedback/GenericFeedbackComposer.jsx'
@@ -36,6 +37,16 @@ function SubmitFeedbackPanel({ searchParams, setSearchParams }) {
     setSearchParams(next)
   }
 
+  // Payload Creation also hands off to Feedback Verification (mapping
+  // review, upstream of RCA) the same way -- switch mode and name the
+  // session; FeedbackVerificationPanel reads verifySessionId itself.
+  function handleVerifyFeedback(payloadSessionId) {
+    const next = new URLSearchParams(searchParams)
+    next.set('mode', 'verify')
+    next.set('verifySessionId', payloadSessionId)
+    setSearchParams(next)
+  }
+
   return (
     <>
       <Segmented
@@ -46,10 +57,14 @@ function SubmitFeedbackPanel({ searchParams, setSearchParams }) {
           { label: 'Feedback (image / ZIP / text)', value: 'feedback' },
           { label: 'SKU config upload', value: 'sku' },
           { label: 'Payload creation', value: 'payload' },
+          { label: 'Feedback Verification', value: 'verify' },
         ]}
       />
       {mode === 'sku' && <L1FeedbackUploadPanel />}
-      {mode === 'payload' && <PayloadCreationPanel onSendToSkuUpload={handleSendToSkuUpload} />}
+      {mode === 'payload' && (
+        <PayloadCreationPanel onSendToSkuUpload={handleSendToSkuUpload} onVerifyFeedback={handleVerifyFeedback} />
+      )}
+      {mode === 'verify' && <FeedbackVerificationPanel />}
       {mode === 'feedback' && <GenericFeedbackComposer />}
     </>
   )

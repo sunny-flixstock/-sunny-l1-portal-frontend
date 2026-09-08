@@ -15,8 +15,23 @@ export function createL1PayloadSession({ files, feedbackDoc, date, createdBy }) 
   })
 }
 
+export function fetchL1PayloadSessions() {
+  return apiRequest('/l1-feedback/payload-sessions')
+}
+
 export function fetchL1PayloadSession(id) {
   return apiRequest(`/l1-feedback/payload-sessions/${encodeURIComponent(id)}`)
+}
+
+export function fetchL1PayloadFeedbackItems(id) {
+  return apiRequest(`/l1-feedback/payload-sessions/${encodeURIComponent(id)}/feedback-items`)
+}
+
+export function verifyL1PayloadFeedbackItem(id, { skuId, itemIndex, status }) {
+  return apiRequest(`/l1-feedback/payload-sessions/${encodeURIComponent(id)}/feedback-items/verify`, {
+    method: 'POST',
+    body: JSON.stringify({ skuId, itemIndex, status }),
+  })
 }
 
 export function fetchL1PayloadSessionFiles(id) {
