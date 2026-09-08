@@ -36,6 +36,19 @@ export function resetL1GroundTruthToCleanBaseline() {
   })
 }
 
+export function advanceL1GroundTruthStagingVersion(documentId) {
+  return apiRequest(`/l1-feedback/ground-truth/${encodeURIComponent(documentId)}/advance-staging`, {
+    method: 'POST',
+  })
+}
+
+export function advanceL1GroundTruthStagingVersionBulk(documentIds) {
+  return apiRequest('/l1-feedback/ground-truth/advance-staging-bulk', {
+    method: 'POST',
+    body: JSON.stringify(documentIds ? { documentIds } : {}),
+  })
+}
+
 // Batches (upload + processing)
 export function createL1FeedbackBatch(configs) {
   return apiRequest('/l1-feedback/batches', {

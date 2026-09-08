@@ -7,6 +7,8 @@ import {
   promoteL1GroundTruthVersion,
   seedL1GroundTruthDocuments,
   resetL1GroundTruthToCleanBaseline,
+  advanceL1GroundTruthStagingVersion,
+  advanceL1GroundTruthStagingVersionBulk,
 } from '../api/l1FeedbackApi.js'
 
 export const l1GroundTruthKeys = {
@@ -72,6 +74,35 @@ export function useResetL1GroundTruthToCleanBaseline() {
     },
     onError: (error) => {
       message.error(error.message || 'Failed to reset to clean baseline')
+    },
+  })
+}
+
+export function useAdvanceL1GroundTruthStagingVersion() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (documentId) => advanceL1GroundTruthStagingVersion(documentId),
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: l1GroundTruthKeys.all })
+      message.success(`Sealed as v${result?.data?.stagingVersionNumber ?? '?'}; new draft started`)
+    },
+    onError: (error) => {
+      message.error(error.message || 'Failed to advance staging version')
+    },
+  })
+}
+
+export function useAdvanceL1GroundTruthStagingVersionBulk() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => advanceL1GroundTruthStagingVersionBulk(),
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: l1GroundTruthKeys.all })
+      const count = result?.data?.advanced?.length ?? 0
+      message.success(count ? `Sealed ${count} document(s) into new versions` : 'Nothing pending to seal')
+    },
+    onError: (error) => {
+      message.error(error.message || 'Failed to advance staging versions')
     },
   })
 }

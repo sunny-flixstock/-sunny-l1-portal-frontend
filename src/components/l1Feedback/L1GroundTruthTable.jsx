@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { Button, Empty, Popconfirm, Space, Table, Tag, Typography } from 'antd'
-import { DiffOutlined, EyeOutlined, RocketOutlined, WarningOutlined } from '@ant-design/icons'
+import { DiffOutlined, EyeOutlined, ForwardOutlined, RocketOutlined, WarningOutlined } from '@ant-design/icons'
 import {
   useL1GroundTruthDocuments,
   usePromoteL1GroundTruthVersion,
   useSeedL1GroundTruthDocuments,
   useResetL1GroundTruthToCleanBaseline,
+  useAdvanceL1GroundTruthStagingVersion,
+  useAdvanceL1GroundTruthStagingVersionBulk,
 } from '../../hooks/useL1GroundTruth.js'
 import { L1GroundTruthCompareModal } from './L1GroundTruthCompareModal.jsx'
 import { L1GroundTruthContentModal } from './L1GroundTruthContentModal.jsx'
@@ -20,8 +22,11 @@ export function L1GroundTruthTable() {
   const seedMutation = useSeedL1GroundTruthDocuments()
   const promoteMutation = usePromoteL1GroundTruthVersion()
   const resetMutation = useResetL1GroundTruthToCleanBaseline()
+  const advanceMutation = useAdvanceL1GroundTruthStagingVersion()
+  const advanceBulkMutation = useAdvanceL1GroundTruthStagingVersionBulk()
   const [compareDoc, setCompareDoc] = useState(null)
   const [viewDoc, setViewDoc] = useState(null)
+  const pendingCount = documents.filter((doc) => doc.hasPendingStagingChanges).length
 
   const columns = [
     { title: 'File', dataIndex: 'fileName', key: 'fileName' },
@@ -54,6 +59,18 @@ export function L1GroundTruthTable() {
           </Button>
           {doc.hasPendingStagingChanges && (
             <Popconfirm
+              title="Move to next staging version?"
+              description="Seals everything approved so far into its own version number and opens a fresh draft — approvals since your last batch keep stacking onto that new draft until you do this again."
+              okText="Move to next version"
+              onConfirm={() => advanceMutation.mutate(doc._id)}
+            >
+              <Button size="small" icon={<ForwardOutlined />} loading={advanceMutation.isPending}>
+                Move to next staging version
+              </Button>
+            </Popconfirm>
+          )}
+          {doc.hasPendingStagingChanges && (
+            <Popconfirm
               title="Promote staging to live?"
               description={`v${doc.stagingVersionNumber} becomes the live version served to production.`}
               okText="Promote"
@@ -75,6 +92,18 @@ export function L1GroundTruthTable() {
     <>
       {documents.length > 0 && (
         <Space style={{ width: '100%', justifyContent: 'flex-end', marginBottom: 12 }}>
+          {pendingCount > 1 && (
+            <Popconfirm
+              title={`Move ${pendingCount} document(s) to their next staging version?`}
+              description="Seals every document with pending changes into its own new version number, in one click."
+              okText="Advance all pending"
+              onConfirm={() => advanceBulkMutation.mutate()}
+            >
+              <Button icon={<ForwardOutlined />} loading={advanceBulkMutation.isPending}>
+                Advance all pending ({pendingCount})
+              </Button>
+            </Popconfirm>
+          )}
           <Popconfirm
             title="Reset every document to a clean v1?"
             description={
