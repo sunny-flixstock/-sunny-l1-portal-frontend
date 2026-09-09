@@ -8,6 +8,7 @@ import { L1GroundTruthTable } from '../components/l1Feedback/L1GroundTruthTable.
 import { GenericFeedbackComposer } from '../components/l1Feedback/GenericFeedbackComposer.jsx'
 import { GenericFeedbackList } from '../components/l1Feedback/GenericFeedbackList.jsx'
 import { BatchSessionHistory } from '../components/l1Feedback/BatchSessionHistory.jsx'
+import { BztSportsAutoRunCard } from '../components/l1Feedback/BztSportsAutoRunCard.jsx'
 
 const { Title } = Typography
 
@@ -111,6 +112,7 @@ export function L1FeedbackPage() {
         activeKey={activeTab}
         onChange={handleTabChange}
         items={[
+          { key: 'auto-run', label: 'BZT Sports Auto Run', children: <BztSportsAutoRunCard /> },
           {
             key: 'submit',
             label: 'Submit Feedback',
