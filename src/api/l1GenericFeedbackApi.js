@@ -32,3 +32,7 @@ export function submitL1GenericFeedbackDecision(id, body) {
     body: JSON.stringify(body),
   })
 }
+
+export function deleteL1GenericFeedback(id) {
+  return apiRequest(`/l1-feedback/generic/${encodeURIComponent(id)}`, { method: 'DELETE' })
+}

@@ -6,6 +6,7 @@ import {
   fetchL1GenericFeedbackList,
   fetchL1GenericFeedback,
   submitL1GenericFeedbackDecision,
+  deleteL1GenericFeedback,
 } from '../api/l1GenericFeedbackApi.js'
 
 /** Reads a File as a bare base64 string (no data: URI prefix) for inline
@@ -111,6 +112,25 @@ export function useSubmitL1GenericFeedbackDecision() {
     },
     onError: (error) => {
       message.error(error.message || 'Failed to submit decision', 10)
+    },
+  })
+}
+
+/** Deletes one generic feedback request (a test submission, or one no
+ * longer needed) -- for cleaning out test data from the HITL Review /
+ * Generic Feedback list. Works on both 'manual' and 'batch_level' kinds;
+ * be careful deleting a batch_level one that hasn't been decided yet, it's
+ * real RCA output from an actual batch run, not test data. */
+export function useDeleteL1GenericFeedback() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id) => deleteL1GenericFeedback(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: l1GenericFeedbackKeys.all })
+      message.success('Deleted')
+    },
+    onError: (error) => {
+      message.error(error.message || 'Failed to delete', 10)
     },
   })
 }

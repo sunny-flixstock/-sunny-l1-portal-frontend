@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Alert, Button, Card, Empty, Image, Input, Popconfirm, Progress, Space, Tag, Typography } from 'antd'
-import { CheckOutlined, CloseOutlined, EditOutlined } from '@ant-design/icons'
-import { useL1GenericFeedbackList, useSubmitL1GenericFeedbackDecision } from '../../hooks/useL1GenericFeedback.js'
+import { CheckOutlined, CloseOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons'
+import {
+  useL1GenericFeedbackList,
+  useSubmitL1GenericFeedbackDecision,
+  useDeleteL1GenericFeedback,
+} from '../../hooks/useL1GenericFeedback.js'
 import { CandidateBlock } from './CandidateBlock.jsx'
 
 const { Text, Paragraph } = Typography
@@ -153,6 +157,8 @@ function TargetCard({ requestId, target, targetIndex }) {
 }
 
 export function RequestCard({ request }) {
+  const deleteRequest = useDeleteL1GenericFeedback()
+
   return (
     <Card
       size="small"
@@ -166,6 +172,23 @@ export function RequestCard({ request }) {
             {new Date(request.createdAt).toLocaleString()}
           </Text>
         </Space>
+      }
+      extra={
+        <Popconfirm
+          title="Delete this feedback request?"
+          description={
+            request.kind === 'batch_level'
+              ? 'This is real batch-level RCA output, not a test submission — deleting it discards its diagnosis. Only do this for a genuine test entry.'
+              : 'Removes this submission and its diagnosis entirely. Cannot be undone.'
+          }
+          okText="Delete"
+          okButtonProps={{ danger: true }}
+          onConfirm={() => deleteRequest.mutate(request._id)}
+        >
+          <Button size="small" danger type="text" icon={<DeleteOutlined />} loading={deleteRequest.isPending}>
+            Delete
+          </Button>
+        </Popconfirm>
       }
       style={{ marginBottom: 16 }}
     >
