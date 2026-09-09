@@ -8,6 +8,7 @@ import {
   fetchL1PayloadFeedbackItems,
   verifyL1PayloadFeedbackItem,
   downloadL1PayloadSessionZip,
+  clearAllL1PayloadSessions,
 } from '../api/l1PayloadSessionApi.js'
 
 export const l1PayloadSessionKeys = {
@@ -81,6 +82,23 @@ export function useDownloadL1PayloadSessionZip() {
     mutationFn: (sessionId) => downloadL1PayloadSessionZip(sessionId),
     onError: (error) => {
       message.error(error.message || 'Failed to download zip')
+    },
+  })
+}
+
+/** Deletes every Payload Creation session/file -- scoped to that alone, see
+ * clearAllL1PayloadSessions. Meant for clearing out sessions created while
+ * testing the feedback-deck flow. */
+export function useClearAllL1PayloadSessions() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => clearAllL1PayloadSessions(),
+    onSuccess: ({ data }) => {
+      queryClient.invalidateQueries({ queryKey: l1PayloadSessionKeys.list })
+      message.success(`Cleared ${data.sessionsDeleted} session(s), ${data.filesDeleted} file(s)`)
+    },
+    onError: (error) => {
+      message.error(error.message || 'Failed to clear payload sessions')
     },
   })
 }

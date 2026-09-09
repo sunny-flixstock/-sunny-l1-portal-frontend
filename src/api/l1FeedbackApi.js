@@ -69,10 +69,23 @@ export function fetchL1FeedbackBatchDetail(id) {
   return apiRequest(`/l1-feedback/batches/${encodeURIComponent(id)}/detail`)
 }
 
+// One-click BZT Sports auto-run: fetches the window's reworked SKUs from
+// Phoenix, builds a Payload Creation session, emails the deck, and hands it
+// to the same batch pipeline createL1FeedbackBatch above uses.
+export function runBztSportsAutoBatch({ windowHours, startTime, endTime } = {}) {
+  return apiRequest('/l1-feedback/auto-run', {
+    method: 'POST',
+    body: JSON.stringify({ windowHours, startTime, endTime }),
+  })
+}
+
 // HITL issues
 export function fetchL1FeedbackIssues(params = {}) {
   const search = new URLSearchParams()
   if (params.skuIds?.length) search.set('skuIds', params.skuIds.join(','))
+  // Default (omitted): server hides any SKU-level issue already absorbed
+  // into a pending batch-level cluster, so the list is issue-wise.
+  if (params.includeClustered) search.set('includeClustered', 'true')
   const query = search.toString()
   return apiRequest(`/l1-feedback/issues${query ? `?${query}` : ''}`)
 }

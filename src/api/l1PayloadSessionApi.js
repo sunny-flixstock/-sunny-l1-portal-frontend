@@ -94,3 +94,9 @@ export async function downloadL1PayloadFeedbackDeck(id) {
   a.remove()
   URL.revokeObjectURL(url)
 }
+
+// Scoped to Payload Creation only -- never touches ground-truth
+// documents/versions or RCA batches/traces.
+export function clearAllL1PayloadSessions() {
+  return apiRequest('/l1-feedback/payload-sessions', { method: 'DELETE' })
+}

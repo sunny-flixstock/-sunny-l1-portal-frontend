@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Alert, Button, Card, Empty, Flex, Image, Input, Popconfirm, Space, Tag, Typography } from 'antd'
+import { Alert, Button, Card, Checkbox, Empty, Flex, Image, Input, Popconfirm, Space, Tag, Typography } from 'antd'
 import { CheckOutlined, CloseOutlined, EditOutlined } from '@ant-design/icons'
 import { useL1FeedbackIssues, useSubmitL1FeedbackIssueDecision } from '../../hooks/useL1FeedbackIssues.js'
 import { CandidateBlock } from './CandidateBlock.jsx'
@@ -133,14 +133,23 @@ function IssueCard({ issue }) {
 }
 
 export function L1FeedbackIssuesList() {
-  const { data: issues = [], isLoading } = useL1FeedbackIssues()
-
-  if (!isLoading && issues.length === 0) {
-    return <Empty description="No open issues awaiting a decision" />
-  }
+  const [includeClustered, setIncludeClustered] = useState(false)
+  const { data: issues = [], isLoading } = useL1FeedbackIssues({ includeClustered })
 
   return (
     <div>
+      <Checkbox checked={includeClustered} onChange={(e) => setIncludeClustered(e.target.checked)} style={{ marginBottom: 12 }}>
+        Show issues already covered by a pending item in Generic Feedback above
+      </Checkbox>
+      {!isLoading && issues.length === 0 && (
+        <Empty
+          description={
+            includeClustered
+              ? 'No open issues awaiting a decision'
+              : 'No open issues outside Generic Feedback above — check that list, or tick the box to see everything'
+          }
+        />
+      )}
       {issues.map((issue) => (
         <IssueCard key={`${issue.skuId}-${issue.clientAngleId}-${issue.variantIndex}-${issue.depth}`} issue={issue} />
       ))}

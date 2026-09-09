@@ -7,10 +7,14 @@ export const l1FeedbackIssueKeys = {
   all: ['l1FeedbackIssues'],
 }
 
-export function useL1FeedbackIssues() {
+/** Defaults to hiding any SKU-level issue already absorbed into a pending
+ * batch-level cluster (see the "Batch-Level Issues" list) -- the point is
+ * to review one issue once, not once as a cluster and again per SKU. Pass
+ * includeClustered: true to see the raw, unfiltered per-SKU list. */
+export function useL1FeedbackIssues({ includeClustered = false } = {}) {
   return useQuery({
-    queryKey: l1FeedbackIssueKeys.all,
-    queryFn: async () => (await fetchL1FeedbackIssues()).data,
+    queryKey: [...l1FeedbackIssueKeys.all, { includeClustered }],
+    queryFn: async () => (await fetchL1FeedbackIssues({ includeClustered })).data,
     meta: { errorMessage: 'Failed to load open issues' },
   })
 }

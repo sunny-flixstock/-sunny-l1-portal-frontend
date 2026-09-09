@@ -4,6 +4,7 @@ import {
   Button,
   Card,
   List,
+  Popconfirm,
   Progress,
   Space,
   Spin,
@@ -21,6 +22,7 @@ import {
   FilePptOutlined,
   FileZipOutlined,
   InboxOutlined,
+  WarningOutlined,
 } from '@ant-design/icons'
 import { useSearchParams } from 'react-router-dom'
 import {
@@ -28,6 +30,7 @@ import {
   useL1PayloadSession,
   useL1PayloadSessionFiles,
   useDownloadL1PayloadSessionZip,
+  useClearAllL1PayloadSessions,
 } from '../../hooks/useL1PayloadSession.js'
 import { useDownloadL1PayloadFeedbackDeck } from '../../hooks/useL1FeedbackDeck.js'
 
@@ -59,6 +62,7 @@ export function PayloadCreationPanel({ onSendToSkuUpload, onVerifyFeedback }) {
   const { data: files = [] } = useL1PayloadSessionFiles(sessionId, session?.status === 'completed')
   const downloadZip = useDownloadL1PayloadSessionZip()
   const downloadDeck = useDownloadL1PayloadFeedbackDeck()
+  const clearAllSessions = useClearAllL1PayloadSessions()
 
   function handleFilesPicked(fileList) {
     const jsonFiles = Array.from(fileList).filter((f) => f.name.toLowerCase().endsWith('.json'))
@@ -102,6 +106,21 @@ export function PayloadCreationPanel({ onSendToSkuUpload, onVerifyFeedback }) {
 
   return (
     <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+      <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
+        <Popconfirm
+          title="Clear all payload sessions?"
+          description="Deletes every session/file created here, including this one if it's open. Never touches ground-truth documents, staging versions, or RCA batches/traces. Cannot be undone — use this to clear out test sessions before real runs start."
+          okText="Clear all"
+          okButtonProps={{ danger: true }}
+          onConfirm={() => {
+            clearAllSessions.mutate(undefined, { onSuccess: () => setSessionId(null) })
+          }}
+        >
+          <Button size="small" danger icon={<WarningOutlined />} loading={clearAllSessions.isPending}>
+            Clear all test sessions
+          </Button>
+        </Popconfirm>
+      </Space>
       {!sessionId && (
         <>
           <Card size="small" title="1. Raw SKU configs (no feedback yet)">
