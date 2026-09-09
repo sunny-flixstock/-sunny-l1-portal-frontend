@@ -18,6 +18,7 @@ import {
   DownloadOutlined,
   EyeOutlined,
   ExportOutlined,
+  FilePptOutlined,
   FileZipOutlined,
   InboxOutlined,
 } from '@ant-design/icons'
@@ -28,6 +29,7 @@ import {
   useL1PayloadSessionFiles,
   useDownloadL1PayloadSessionZip,
 } from '../../hooks/useL1PayloadSession.js'
+import { useDownloadL1PayloadFeedbackDeck } from '../../hooks/useL1FeedbackDeck.js'
 
 const { Text, Paragraph } = Typography
 const { Dragger } = Upload
@@ -56,6 +58,7 @@ export function PayloadCreationPanel({ onSendToSkuUpload, onVerifyFeedback }) {
   const { data: session } = useL1PayloadSession(sessionId)
   const { data: files = [] } = useL1PayloadSessionFiles(sessionId, session?.status === 'completed')
   const downloadZip = useDownloadL1PayloadSessionZip()
+  const downloadDeck = useDownloadL1PayloadFeedbackDeck()
 
   function handleFilesPicked(fileList) {
     const jsonFiles = Array.from(fileList).filter((f) => f.name.toLowerCase().endsWith('.json'))
@@ -191,6 +194,14 @@ export function PayloadCreationPanel({ onSendToSkuUpload, onVerifyFeedback }) {
             <Space>
               <Button size="small" icon={<DownloadOutlined />} loading={downloadZip.isPending} onClick={() => downloadZip.mutate(sessionId)}>
                 Download ZIP
+              </Button>
+              <Button
+                size="small"
+                icon={<FilePptOutlined />}
+                loading={downloadDeck.isPending}
+                onClick={() => downloadDeck.mutate(sessionId)}
+              >
+                Download Feedback Deck
               </Button>
               <Button size="small" icon={<EyeOutlined />} onClick={() => onVerifyFeedback?.(sessionId)}>
                 Verify Feedback

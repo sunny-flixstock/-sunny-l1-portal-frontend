@@ -66,3 +66,31 @@ export async function downloadL1PayloadSessionZip(id) {
   a.remove()
   URL.revokeObjectURL(url)
 }
+
+// Same binary-response pattern as downloadL1PayloadSessionZip, plus
+// surfacing the real error message (e.g. "no merged feedback items") on a
+// 400 instead of a generic failure, since that's a real, expected outcome
+// for an empty/unmatched session.
+export async function downloadL1PayloadFeedbackDeck(id) {
+  const token = getSessionToken()
+  const response = await fetch(`${API_BASE}/l1-feedback/payload-sessions/${encodeURIComponent(id)}/feedback-deck`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  })
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}))
+    throw new Error(data.message || 'Failed to download feedback deck')
+  }
+  const blob = await response.blob()
+  const disposition = response.headers.get('Content-Disposition') || ''
+  const match = disposition.match(/filename="?([^"]+)"?/)
+  const filename = match?.[1] || `feedback_deck_${id}.pptx`
+
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
+}

@@ -1,30 +1,9 @@
 import { useEffect, useState } from 'react'
-import {
-  Alert,
-  Button,
-  Card,
-  Empty,
-  Image,
-  Segmented,
-  Select,
-  Space,
-  Spin,
-  Tag,
-  Typography,
-  message,
-} from 'antd'
-import {
-  CheckCircleOutlined,
-  CloseCircleOutlined,
-  CopyOutlined,
-  DownloadOutlined,
-} from '@ant-design/icons'
+import { Alert, Button, Card, Empty, Image, Select, Space, Spin, Tag, Typography, message } from 'antd'
+import { CopyOutlined, DownloadOutlined, FilePptOutlined } from '@ant-design/icons'
 import { useSearchParams } from 'react-router-dom'
-import {
-  useL1PayloadSessions,
-  useL1PayloadFeedbackItems,
-  useVerifyL1PayloadFeedbackItem,
-} from '../../hooks/useL1PayloadSession.js'
+import { useL1PayloadSessions, useL1PayloadFeedbackItems } from '../../hooks/useL1PayloadSession.js'
+import { useDownloadL1PayloadFeedbackDeck } from '../../hooks/useL1FeedbackDeck.js'
 
 const { Text, Paragraph } = Typography
 
@@ -79,11 +58,9 @@ async function downloadImage(url, filename) {
   URL.revokeObjectURL(objectUrl)
 }
 
-function FeedbackItemCard({ sessionId, item, index }) {
-  const verify = useVerifyL1PayloadFeedbackItem(sessionId)
+function FeedbackItemCard({ item, index }) {
   const [copying, setCopying] = useState(false)
   const [downloading, setDownloading] = useState(false)
-  const status = item.verification?.status ?? 'pending'
 
   const filenameForImage = item.imageUrl ? item.imageUrl.split('/').pop().split('?')[0] : `${item.skuId}.jpg`
 
@@ -113,10 +90,7 @@ function FeedbackItemCard({ sessionId, item, index }) {
   return (
     <Card
       size="small"
-      style={{
-        marginBottom: 16,
-        borderColor: status === 'correct' ? '#b7eb8f' : status === 'wrong' ? '#ffa39e' : undefined,
-      }}
+      style={{ marginBottom: 16 }}
       title={
         <Space wrap>
           <Text strong>Feedback #{String(index + 1).padStart(3, '0')}</Text>
@@ -124,14 +98,6 @@ function FeedbackItemCard({ sessionId, item, index }) {
           <Tag>Angle: {item.angleName ?? '—'}</Tag>
           <Tag color="purple">Variant: V{item.variantIndex + 1}</Tag>
           {item.matchConfidence === 'low' && <Tag color="gold">low-confidence match</Tag>}
-          {status !== 'pending' && (
-            <Tag
-              icon={status === 'correct' ? <CheckCircleOutlined /> : <CloseCircleOutlined />}
-              color={status === 'correct' ? 'success' : 'error'}
-            >
-              {status === 'correct' ? 'Correct mapping' : 'Wrong mapping'}
-            </Tag>
-          )}
         </Space>
       }
     >
@@ -168,48 +134,26 @@ function FeedbackItemCard({ sessionId, item, index }) {
         <Button icon={<DownloadOutlined />} loading={downloading} disabled={!item.imageUrl} onClick={handleDownload}>
           Download Image
         </Button>
-        <Button
-          type={status === 'correct' ? 'primary' : 'default'}
-          icon={<CheckCircleOutlined />}
-          loading={verify.isPending}
-          onClick={() => verify.mutate({ skuId: item.skuId, itemIndex: item.itemIndex, status: 'correct' })}
-        >
-          Correct Mapping
-        </Button>
-        <Button
-          danger={status === 'wrong'}
-          type={status === 'wrong' ? 'primary' : 'default'}
-          icon={<CloseCircleOutlined />}
-          loading={verify.isPending}
-          onClick={() => verify.mutate({ skuId: item.skuId, itemIndex: item.itemIndex, status: 'wrong' })}
-        >
-          Wrong Mapping
-        </Button>
       </Space>
     </Card>
   )
 }
 
-const FILTERS = [
-  { label: 'All', value: 'all' },
-  { label: 'Pending', value: 'pending' },
-  { label: 'Correct', value: 'correct' },
-  { label: 'Wrong', value: 'wrong' },
-]
-
-/** Mapping-verification tab, deliberately upstream of RCA (see
- * L1FeedbackPage.jsx): for every feedback item Payload Creation extracted
- * and merged, fetches the real image it was mapped to (straight from the
- * CDN, no server-side resizing) and shows it next to the feedback text, so
- * a human can visually confirm the mapping is actually right before any of
- * this goes near SKU config upload / RCA. */
+/** Read-only feedback review, deliberately upstream of RCA and decoupled
+ * from it entirely (see L1FeedbackPage.jsx): for every feedback item
+ * Payload Creation extracted and merged, fetches the real image it was
+ * mapped to (straight from the CDN, no server-side resizing) and shows it
+ * next to the feedback text, so you can see which image got which feedback
+ * and what kinds of feedback are coming in, at a glance. Purely a personal
+ * visibility/analysis tool -- nothing here writes back to any config or
+ * feeds SKU config upload/RCA. */
 export function FeedbackVerificationPanel() {
   const [searchParams, setSearchParams] = useSearchParams()
   const sessionId = searchParams.get('verifySessionId')
-  const [filter, setFilter] = useState('all')
 
   const { data: sessions = [], isLoading: sessionsLoading } = useL1PayloadSessions()
   const { data: items = [], isLoading: itemsLoading } = useL1PayloadFeedbackItems(sessionId)
+  const downloadDeck = useDownloadL1PayloadFeedbackDeck()
 
   // Default to the most recently created session once the list loads, if
   // none is already selected via URL.
@@ -228,14 +172,12 @@ export function FeedbackVerificationPanel() {
     setSearchParams(next)
   }
 
-  const filteredItems = items.filter((item) => filter === 'all' || (item.verification?.status ?? 'pending') === filter)
-
   return (
     <Space direction="vertical" size="middle" style={{ width: '100%' }}>
       <Alert
         type="info"
         showIcon
-        message="This is mapping verification, not RCA — confirm each feedback item points at the right image before it goes anywhere near diagnosis."
+        message="See which image each piece of feedback belongs to, and what kind of feedback is coming in — this has no effect on SKU config upload or RCA."
       />
 
       <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
@@ -250,7 +192,15 @@ export function FeedbackVerificationPanel() {
             label: `${s.date} — ${s.sourceDocName ?? 'session'} (${s.matchedCount ?? 0} matched)`,
           }))}
         />
-        {items.length > 0 && <Segmented options={FILTERS} value={filter} onChange={setFilter} />}
+        {items.length > 0 && (
+          <Button
+            icon={<FilePptOutlined />}
+            loading={downloadDeck.isPending}
+            onClick={() => downloadDeck.mutate(sessionId)}
+          >
+            Download Feedback Deck
+          </Button>
+        )}
       </Space>
 
       {!sessionId && !sessionsLoading && (
@@ -264,11 +214,11 @@ export function FeedbackVerificationPanel() {
       )}
 
       {sessionId && !itemsLoading && items.length === 0 && (
-        <Empty description="This session has no merged feedback items to verify" />
+        <Empty description="This session has no merged feedback items" />
       )}
 
-      {filteredItems.map((item, index) => (
-        <FeedbackItemCard key={`${item.skuId}-${item.itemIndex}`} sessionId={sessionId} item={item} index={index} />
+      {items.map((item, index) => (
+        <FeedbackItemCard key={`${item.skuId}-${item.itemIndex}`} item={item} index={index} />
       ))}
     </Space>
   )
