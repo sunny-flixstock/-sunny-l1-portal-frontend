@@ -95,32 +95,63 @@ function FeedbackItemCard({ item, index }) {
         <Space wrap>
           <Text strong>Feedback #{String(index + 1).padStart(3, '0')}</Text>
           <Tag color="blue">SKU: {item.skuId}</Tag>
-          <Tag>Angle: {item.angleName ?? '—'}</Tag>
+          <Tag>Angle: {item.angleName ?? '—'} (AI-matched)</Tag>
           <Tag color="purple">Variant: V{item.variantIndex + 1}</Tag>
           {item.matchConfidence === 'low' && <Tag color="gold">low-confidence match</Tag>}
         </Space>
       }
     >
       <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-        <div style={{ flex: '1 1 320px', textAlign: 'center', background: '#fafafa', borderRadius: 8, padding: 8 }}>
-          {item.imageUrl ? (
-            <Image
-              src={item.imageUrl}
-              alt={`SKU ${item.skuId} — ${item.angleName} V${item.variantIndex + 1}`}
-              style={{ maxWidth: '100%', maxHeight: 420, objectFit: 'contain' }}
-              // No width/height forcing beyond fitting the card -- clicking
-              // opens antd's preview overlay at the image's real native
-              // resolution, nothing resized/recompressed server-side.
-            />
-          ) : (
-            <Empty description="No image URL found for this variant" />
-          )}
+        <div style={{ flex: '1 1 260px', textAlign: 'center', background: '#fafafa', borderRadius: 8, padding: 8 }}>
+          <Text strong style={{ fontSize: 12, color: '#8c8c8c', letterSpacing: 0.5 }}>
+            ORIGINAL SCREENSHOT (QC)
+          </Text>
+          <div style={{ marginTop: 8 }}>
+            {item.screenshotImageUrl ? (
+              <Image
+                src={item.screenshotImageUrl}
+                alt={`Original QC screenshot for ${item.skuId}`}
+                style={{ maxWidth: '100%', maxHeight: 380, objectFit: 'contain' }}
+              />
+            ) : (
+              <Empty description="No screenshot stored for this item" />
+            )}
+          </div>
         </div>
-        <div style={{ flex: '1 1 280px' }}>
+        <div style={{ flex: '1 1 260px', textAlign: 'center', background: '#fafafa', borderRadius: 8, padding: 8 }}>
+          <Text strong style={{ fontSize: 12, color: '#8c8c8c', letterSpacing: 0.5 }}>
+            MATCHED CANDIDATE ({item.angleName ?? '—'} V{item.variantIndex + 1})
+          </Text>
+          <div style={{ marginTop: 8 }}>
+            {item.imageUrl ? (
+              <Image
+                src={item.imageUrl}
+                alt={`SKU ${item.skuId} — ${item.angleName} V${item.variantIndex + 1}`}
+                style={{ maxWidth: '100%', maxHeight: 380, objectFit: 'contain' }}
+                // No width/height forcing beyond fitting the card -- clicking
+                // opens antd's preview overlay at the image's real native
+                // resolution, nothing resized/recompressed server-side.
+              />
+            ) : (
+              <Empty description="No image URL found for this variant" />
+            )}
+          </div>
+        </div>
+        <div style={{ flex: '1 1 260px' }}>
           <Text strong style={{ fontSize: 12, color: '#8c8c8c', letterSpacing: 0.5 }}>
             FEEDBACK
           </Text>
           <Paragraph style={{ marginTop: 4 }}>&ldquo;{item.feedbackText}&rdquo;</Paragraph>
+          {item.matchReasoning && (
+            <>
+              <Text strong style={{ fontSize: 12, color: '#8c8c8c', letterSpacing: 0.5 }}>
+                WHY THIS MATCH
+              </Text>
+              <Paragraph type="secondary" style={{ marginTop: 4, fontSize: 13 }}>
+                {item.matchReasoning}
+              </Paragraph>
+            </>
+          )}
           <Text type="secondary" style={{ fontSize: 12 }}>
             Source: QC feedback doc
           </Text>
@@ -129,10 +160,10 @@ function FeedbackItemCard({ item, index }) {
 
       <Space wrap style={{ marginTop: 16 }}>
         <Button icon={<CopyOutlined />} loading={copying} disabled={!item.imageUrl} onClick={handleCopy}>
-          Copy Image
+          Copy Matched Image
         </Button>
         <Button icon={<DownloadOutlined />} loading={downloading} disabled={!item.imageUrl} onClick={handleDownload}>
-          Download Image
+          Download Matched Image
         </Button>
       </Space>
     </Card>

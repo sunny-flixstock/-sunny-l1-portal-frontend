@@ -143,13 +143,16 @@ export function PayloadCreationPanel({ onSendToSkuUpload, onVerifyFeedback }) {
             )}
           </Card>
 
-          <Card size="small" title="2. Feedback PPT/DOC (SKU ID → angle → variant → feedback)">
+          <Card size="small" title="2. Feedback PPT/DOC (SKU ID → screenshot → feedback)">
             <Upload.Dragger multiple={false} showUploadList={feedbackDoc ? [{ name: feedbackDoc.name }] : false} beforeUpload={handleDocPicked}>
               <p className="ant-upload-drag-icon">
                 <InboxOutlined />
               </p>
               <p className="ant-upload-text">Drag &amp; drop the feedback .pptx or .docx here, or click to browse</p>
             </Upload.Dragger>
+            <Paragraph type="secondary" style={{ marginTop: 12, marginBottom: 0, fontSize: 13 }}>
+              Angle and variant are no longer given in the doc — they&apos;re matched automatically by comparing each screenshot against the SKU&apos;s own candidate images.
+            </Paragraph>
           </Card>
 
           <Button
